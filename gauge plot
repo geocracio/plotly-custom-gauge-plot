@@ -1,0 +1,97 @@
+import math
+import numpy as np
+import plotly.graph_objects as go
+import plotly.offline as py
+
+
+def translate(value, leftMin, leftMax, rightMin, rightMax):
+    leftSpan = leftMax - leftMin
+    rightSpan = rightMax - rightMin
+
+    valueScaled = float(value - leftMin) / float(leftSpan)
+
+    return rightMin + (valueScaled * rightSpan)
+
+
+def gauge_plot(score_in):
+    score_copy = score_in
+    labels = ["F", "E", "D", "C", "B", "A", " "]
+    values = [11.666, 11.666, 11.666, 11.666, 11.666, 11.666, 30]
+    condlist = [
+        0 <= score_in <= 365,
+        366 <= score_in <= 465,
+        466 <= score_in <= 575,
+        576 <= score_in <= 686,
+        687 <= score_in <= 859,
+        860 <= score_in <= 1000,
+    ]
+    choicelist = [
+        translate(score_in, 0, 365, 0, 166.667),
+        translate(score_in, 366, 465, 166.668, 333.334),
+        translate(score_in, 466, 575, 333.335, 500),
+        translate(score_in, 576, 686, 500.1, 666.667),
+        translate(score_in, 687, 859, 666.668, 833.334),
+        translate(score_in, 860, 1000, 833.335, 1000),
+    ]
+    score_in = np.select(condlist, choicelist)
+    score = score_in / 10
+    theta = score * (285 - 35) / 100 - 35
+    width = 0.045
+    radius = 0.37
+    offset = 0.5
+    x = math.cos(math.radians(theta)) * radius * -1
+    y = math.sin(math.radians(theta)) * radius
+    x0 = math.cos(math.radians(theta - 90)) * width * -1
+    y0 = math.sin(math.radians(theta - 90)) * width
+    x1 = math.cos(math.radians(theta - 90)) * width
+    y1 = math.sin(math.radians(theta - 90)) * width * -1
+    fig = go.Figure()
+    fig.add_pie(
+        labels=labels,
+        values=values,
+        hole=0.75,
+        rotation=126,
+        textposition="inside",
+        showlegend=False,
+        textinfo="label",
+        textfont=dict(color="black", size=12),
+        direction="clockwise",
+        marker=dict(
+            colors=["rgb(229, 60, 26)", "rgb(229, 128, 26)", "rgb(229, 161, 26)", "rgb(183, 210, 45)", "rgb(72, 210, 45)", "rgb(75, 237, 43)", "rgba(255, 255, 255, 0)"],
+            line=dict(
+                color='white',
+                width=3
+            ),
+        )
+    )
+    fig.add_shape(
+        dict(
+            type="path",
+            path=f"M {x + 0.5} {y + 0.5} L {x0 + 0.5} {y0 + 0.5} L {x1 + 0.5} {y1 + 0.5} Z",
+            fillcolor="black",
+            line_color="black",
+        )
+    )
+    fig.add_shape(
+        dict(
+            type="circle",
+            x0=0.45, y0=0.45, x1=0.55, y1=0.55,
+            line_color='black',
+            fillcolor="black",
+        )
+    )
+    fig.update_layout(
+        margin=dict(l=0, r=0, b=0, t=0, pad=0),
+        height=150,
+        width=150,
+        paper_bgcolor="#FFFFFF"
+    )
+    fig.add_annotation(
+        dict(font=dict(color='black', size=30),
+             x=0.5,
+             y=0.18,
+             showarrow=False,
+             text=f"{score_copy}",
+             )
+    )
+    return fig
